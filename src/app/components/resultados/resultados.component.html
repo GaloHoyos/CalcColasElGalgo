@@ -1,0 +1,250 @@
+<div *ngIf="result" class="results">
+  <h4>Resultados del Sistema {{ queueType }}</h4>
+
+  <!-- Métricas básicas comunes a todos los modelos -->
+  <div class="results-grid">
+    <div class="card">
+      <h5>Métricas Básicas</h5>
+      <div class="metric">
+        <span class="metric-label">Intensidad de tráfico (ρ):</span>
+        <span class="metric-value">{{ result.rho | number : "1.4-4" }}</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Prob. sistema vacío (P₀):</span>
+        <span class="metric-value">{{ result.P0 | number : "1.4-4" }}</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Utilización del sistema:</span>
+        <span class="metric-value"
+          >{{ result.rho * 100 | number : "1.2-2" }}%</span
+        >
+      </div>
+    </div>
+
+    <div class="card">
+      <h5>Número Promedio en el Sistema</h5>
+      <div class="metric">
+        <span class="metric-label">En el sistema (L):</span>
+        <span class="metric-value">{{ result.L | number : "1.4-4" }}</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">En la cola (Lq):</span>
+        <span class="metric-value">{{ result.Lq | number : "1.4-4" }}</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Siendo atendidos:</span>
+        <span class="metric-value">{{
+          result.L - result.Lq | number : "1.4-4"
+        }}</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h5>Tiempo Promedio</h5>
+      <div class="metric">
+        <span class="metric-label">En el sistema (W):</span>
+        <span class="metric-value">{{ result.W | number : "1.4-4" }}</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">En la cola (Wq):</span>
+        <span class="metric-value">{{ result.Wq | number : "1.4-4" }}</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">De servicio:</span>
+        <span class="metric-value">{{
+          result.W - result.Wq | number : "1.4-4"
+        }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Secciones específicas según el modelo -->
+
+  <!-- MM1N: Capacidad finita -->
+  <div *ngIf="queueType === 'MM1N'" class="results-grid additional-metrics">
+    <div class="card">
+      <h5>Métricas Específicas MM1N</h5>
+      <div class="metric">
+        <span class="metric-label">Prob. de pérdida (Pn):</span>
+        <span class="metric-value">{{
+          getLossProbability() | number : "1.4-4"
+        }}</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Tasa efectiva (λef):</span>
+        <span class="metric-value">{{
+          params.lambda * (1 - getLossProbability()) | number : "1.4-4"
+        }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- MM2: Múltiples servidores -->
+  <div *ngIf="queueType === 'MM2'" class="results-grid additional-metrics">
+    <div class="card">
+      <h5>Métricas Específicas MM2</h5>
+      <div class="metric">
+        <span class="metric-label">Prob. de esperar (Pw):</span>
+        <span class="metric-value">{{
+          getWaitingProbability() | number : "1.4-4"
+        }}</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Prob. 1 servidor ocupado:</span>
+        <span class="metric-value">{{
+          getProbabilityN(1) | number : "1.4-4"
+        }}</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Prob. 2 servidores ocupados:</span>
+        <span class="metric-value">{{
+          getProbabilityN(2) | number : "1.4-4"
+        }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- MG1: Servicio con distribución general -->
+  <div *ngIf="queueType === 'MG1'" class="results-grid additional-metrics">
+    <div class="card">
+      <h5>Métricas Específicas MG1</h5>
+      <div class="metric">
+        <span class="metric-label">Factor de condición (C):</span>
+        <span class="metric-value">{{
+          getConditionFactor() | number : "1.4-4"
+        }}</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Coef. de variación:</span>
+        <span class="metric-value">{{
+          params.sigma * params.mu | number : "1.4-4"
+        }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- MD1: Servicio determinístico -->
+  <div *ngIf="queueType === 'MD1'" class="results-grid additional-metrics">
+    <div class="card">
+      <h5>Métricas Específicas MD1</h5>
+      <div class="metric">
+        <span class="metric-label">Lq (óptimo):</span>
+        <span class="metric-value">{{
+          (result.rho * result.rho) / (2 * (1 - result.rho)) | number : "1.4-4"
+        }}</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Comparación con MM1:</span>
+        <span class="metric-value">50% menos de espera</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Gráfico de probabilidades para MM1, MM1N y MM2 -->
+  <div
+    *ngIf="['MM1', 'MM1N', 'MM2'].includes(queueType)"
+    class="card probability-chart"
+  >
+    <h5>Probabilidades de Estados (P₀ a P₅)</h5>
+    <div class="probability-bars">
+      <div *ngFor="let n of [0, 1, 2, 3, 4, 5]" class="probability-bar">
+        <div class="bar-label">P{{ n }}</div>
+        <div class="bar-container">
+          <div
+            class="bar"
+            [style.width.%]="getProbabilityN(n) * 100"
+            [class.disabled]="!isStateAllowed(n)"
+          ></div>
+        </div>
+        <div class="bar-value" [class.disabled-text]="!isStateAllowed(n)">
+          {{ getProbabilityN(n) | number : "1.2-2" }}
+          <span *ngIf="!isStateAllowed(n)" class="not-possible">imposible</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Priority: Sistema con prioridades -->
+  <div
+    *ngIf="queueType === 'Prioridades' && result?.priorityData"
+    class="results-grid additional-metrics"
+  >
+    <div class="card">
+      <h5>Clientes de Alta Prioridad (Clase 1)</h5>
+      <div class="metric">
+        <span class="metric-label">Clientes en el sistema (L₁):</span>
+        <span class="metric-value">{{
+          getClass1Value("L") | number : "1.4-4"
+        }}</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Clientes en cola (Lq₁):</span>
+        <span class="metric-value">{{
+          getClass1Value("Lq") | number : "1.4-4"
+        }}</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Tiempo en sistema (W₁):</span>
+        <span class="metric-value">{{
+          getClass1Value("W") | number : "1.4-4"
+        }}</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Tiempo en cola (Wq₁):</span>
+        <span class="metric-value">{{
+          getClass1Value("Wq") | number : "1.4-4"
+        }}</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h5>Clientes de Baja Prioridad (Clase 2)</h5>
+      <div class="metric">
+        <span class="metric-label">Clientes en el sistema (L₂):</span>
+        <span class="metric-value">{{
+          getClass2Value("L") | number : "1.4-4"
+        }}</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Clientes en cola (Lq₂):</span>
+        <span class="metric-value">{{
+          getClass2Value("Lq") | number : "1.4-4"
+        }}</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Tiempo en sistema (W₂):</span>
+        <span class="metric-value">{{
+          getClass2Value("W") | number : "1.4-4"
+        }}</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Tiempo en cola (Wq₂):</span>
+        <span class="metric-value">{{
+          getClass2Value("Wq") | number : "1.4-4"
+        }}</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h5>Comparación entre Clases</h5>
+      <div class="metric">
+        <span class="metric-label">Ratio tiempo espera (W₂/W₁):</span>
+        <span class="metric-value">{{
+          getWaitTimeRatio() | number : "1.4-4"
+        }}</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Ratio tiempo cola (Wq₂/Wq₁):</span>
+        <span class="metric-value">{{
+          getQueueTimeRatio() | number : "1.4-4"
+        }}</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Proporción clientes tipo 1:</span>
+        <span class="metric-value"
+          >{{ getPriorityRatio() | number : "1.2-2" }}%</span
+        >
+      </div>
+    </div>
+  </div>
+</div>

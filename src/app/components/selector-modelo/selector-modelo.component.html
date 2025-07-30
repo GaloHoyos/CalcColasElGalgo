@@ -1,0 +1,12 @@
+<div class="queue-selector-container">
+  <h3>Selecciona el Modelo de Cola</h3>
+  <div class="queue-selector">
+    <button
+      *ngFor="let type of queueTypes"
+      [class]="'btn btn-secondary ' + (selectedQueue === type ? 'active' : '')"
+      (click)="onQueueSelect(type)"
+    >
+      {{ type }}
+    </button>
+  </div>
+</div>

@@ -1,0 +1,79 @@
+<div class="container">
+  <div class="header">
+    <h1>Calculadora de Teoría de Colas El Galgo</h1>
+    <p>Calcula métricas para sistemas de colas MM1, MM1/N, MM2, MG1 y MD1</p>
+  </div>
+
+  <div class="card">
+    <app-selector-modelo
+      [selectedQueue]="selectedQueue"
+      [queueTypes]="queueTypes"
+      (queueSelected)="selectQueue($event)"
+    >
+    </app-selector-modelo>
+
+    <div [ngSwitch]="selectedQueue">
+      <app-mm1
+        *ngSwitchCase="'MM1'"
+        [params]="mm1Params"
+        (paramsChange)="onMM1ParamsChange($event)"
+      >
+      </app-mm1>
+
+      <app-mm1n
+        *ngSwitchCase="'MM1N'"
+        [params]="mm1nParams"
+        (paramsChange)="onMM1NParamsChange($event)"
+      >
+      </app-mm1n>
+
+      <app-mm2
+        *ngSwitchCase="'MM2'"
+        [params]="mm2Params"
+        (paramsChange)="onMM2ParamsChange($event)"
+      >
+      </app-mm2>
+
+      <app-mg1
+        *ngSwitchCase="'MG1'"
+        [params]="mg1Params"
+        (paramsChange)="onMG1ParamsChange($event)"
+      >
+      </app-mg1>
+
+      <app-md1
+        *ngSwitchCase="'MD1'"
+        [params]="md1Params"
+        (paramsChange)="onMD1ParamsChange($event)"
+      >
+      </app-md1>
+      <app-priority
+        *ngSwitchCase="'Prioridades'"
+        [params]="priorityParams"
+        (paramsChange)="onPriorityParamsChange($event)"
+      >
+      </app-priority>
+    </div>
+
+    <div *ngIf="errorMessage" class="error">
+      {{ errorMessage }}
+    </div>
+
+    <!-- Animación -->
+    <app-animacion
+      [queueType]="selectedQueue"
+      [result]="result"
+      [arrivalRate]="getCurrentArrivalRate()"
+      [serviceRate]="getCurrentServiceRate()"
+      [systemCapacity]="getCurrentCapacity()"
+    >
+    </app-animacion>
+
+    <app-resultados
+      [result]="result"
+      [queueType]="selectedQueue"
+      [params]="queueParams"
+    >
+    </app-resultados>
+  </div>
+</div>

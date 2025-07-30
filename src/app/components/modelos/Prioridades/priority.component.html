@@ -1,0 +1,59 @@
+<div class="queue-form">
+  <h4>Modelo con Prioridades (Sin Interrupción)</h4>
+  <div class="formula">
+    <h4>Descripción:</h4>
+    <div class="formula-text">
+      • Llegadas: Dos clases de clientes con tasas λ₁ y λ₂<br />
+      • Servicio: Exponencial (tasa μ)<br />
+      • Prioridad: Clase 1 > Clase 2 (sin interrupción)<br />
+      • Capacidad: Infinita
+    </div>
+  </div>
+
+  <div class="input-grid">
+    <div class="form-group">
+      <label>Tasa de llegadas clase 1 (λ₁):</label>
+      <input
+        type="number"
+        class="form-control"
+        [ngModel]="params.lambda1"
+        (ngModelChange)="updateLambda1($event)"
+        step="0.1"
+        min="0"
+      />
+    </div>
+    <div class="form-group">
+      <label>Tasa de llegadas clase 2 (λ₂):</label>
+      <input
+        type="number"
+        class="form-control"
+        [ngModel]="params.lambda2"
+        (ngModelChange)="updateLambda2($event)"
+        step="0.1"
+        min="0"
+      />
+    </div>
+    <div class="form-group">
+      <label>Tasa de servicio (μ):</label>
+      <input
+        type="number"
+        class="form-control"
+        [ngModel]="params.mu"
+        (ngModelChange)="updateMu($event)"
+        step="0.1"
+        min="0"
+      />
+    </div>
+    <div class="form-group">
+      <label>Tiempo restante servicio (W₀):</label>
+      <input
+        type="number"
+        class="form-control"
+        [ngModel]="params.W0"
+        (ngModelChange)="updateW0($event)"
+        step="0.1"
+        min="0"
+      />
+    </div>
+  </div>
+</div>

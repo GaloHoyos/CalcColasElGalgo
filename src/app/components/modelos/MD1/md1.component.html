@@ -1,0 +1,37 @@
+<div class="queue-form">
+  <h4>Modelo M/D/1</h4>
+  <div class="formula">
+    <h4>Descripción:</h4>
+    <div class="formula-text">
+      • Llegadas: Proceso de Poisson (tasa λ)<br />
+      • Servicio: Determinístico (tiempo fijo 1/μ)<br />
+      • Servidores: 1<br />
+      • Capacidad: Infinita
+    </div>
+  </div>
+
+  <div class="input-grid">
+    <div class="form-group">
+      <label>Tasa de llegadas (λ):</label>
+      <input
+        type="number"
+        class="form-control"
+        [ngModel]="params.lambda"
+        (ngModelChange)="updateLambda($event)"
+        step="0.1"
+        min="0"
+      />
+    </div>
+    <div class="form-group">
+      <label>Tasa de servicio (μ):</label>
+      <input
+        type="number"
+        class="form-control"
+        [ngModel]="params.mu"
+        (ngModelChange)="updateMu($event)"
+        step="0.1"
+        min="0"
+      />
+    </div>
+  </div>
+</div>

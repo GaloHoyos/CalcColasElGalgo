@@ -1,0 +1,114 @@
+<div class="animation-container">
+  <h4>Simulación Visual del Sistema</h4>
+  <div class="queue-visualization">
+    <!-- Entrada del sistema -->
+    <div class="entrance">
+      <div class="entrance-label">Entrada</div>
+      <div class="arrival-rate">λ = {{ arrivalRate }}</div>
+      <div class="throughput" *ngIf="rejectedCustomers > 0">
+        Rechazos: {{ rejectedCustomers }}
+      </div>
+    </div>
+
+    <!-- Cola de espera -->
+    <div class="waiting-area">
+      <div class="queue-label">Cola de Espera</div>
+      <div class="queue-line">
+        <!-- En el HTML de la animación -->
+        <div
+          *ngFor="let customer of waitingCustomers; trackBy: trackCustomer"
+          class="customer waiting"
+          [class.priority-high]="customer.priority === 1"
+          [class.priority-low]="customer.priority === 2"
+          [style.left]="getCustomerPosition(customer.position)"
+        >
+          {{ customer.priority === 1 ? "👑" : "👤" }}
+        </div>
+      </div>
+      <div class="queue-stats">
+        <small
+          >En cola: {{ waitingCustomers.length }} | Lq ≈
+          {{ expectedInQueue }}</small
+        >
+      </div>
+    </div>
+
+    <!-- Servidores -->
+    <div class="service-area">
+      <div class="service-label">Área de Servicio</div>
+      <div class="servers">
+        <div
+          *ngFor="let server of servers"
+          class="server"
+          [class.busy]="server.busy"
+          [class.idle]="!server.busy"
+        >
+          <div class="server-icon">🏪</div>
+          <div class="server-label">Servidor {{ server.id + 1 }}</div>
+          <div class="service-rate">μ = {{ serviceRate }}</div>
+          <div
+            *ngIf="server.customer"
+            class="customer being-served"
+            [class.priority-high]="server.customer.priority === 1"
+            [class.priority-low]="server.customer.priority === 2"
+          >
+            {{ server.customer.priority === 1 ? "👑" : "👤" }}
+          </div>
+          <div class="server-status">
+            {{ server.busy ? "Ocupado" : "Libre" }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Salida del sistema -->
+    <div class="exit">
+      <div class="exit-label">Salida</div>
+      <div class="throughput">Atendidos: {{ servedCustomers }}</div>
+    </div>
+
+    <!-- Estadísticas en tiempo real -->
+    <div class="live-stats">
+      <div class="stat-item">
+        <span class="stat-label">Sistema:</span>
+        <span class="stat-value">{{ totalInSystem }}</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Utilización:</span>
+        <span class="stat-value">{{ utilization }}%</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Tiempo simulado:</span>
+        <span class="stat-value">{{ formatTime(elapsedTime) }}</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Velocidad:</span>
+        <span class="stat-value">{{ timeScale }} min/seg</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Controles de simulación -->
+  <div class="simulation-controls">
+    <button
+      class="btn btn-primary"
+      (click)="toggleSimulation()"
+      [disabled]="!isValidSystem"
+    >
+      {{ isRunning ? "Pausar" : "Iniciar" }} Simulación
+    </button>
+
+    <button class="btn btn-secondary" (click)="resetSimulation()">
+      Reiniciar
+    </button>
+
+    <div class="simulation-speed-control">
+      <label>Velocidad de simulación:</label>
+      <select [(ngModel)]="timeScale" (change)="updateSimulationSpeed()">
+        <option *ngFor="let option of timeScaleOptions" [value]="option">
+          {{ option }} min/seg
+        </option>
+      </select>
+    </div>
+  </div>
+</div>

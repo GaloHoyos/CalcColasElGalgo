@@ -1,0 +1,59 @@
+.results-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+  margin-bottom: 20px;
+}
+.additional-metrics {
+  margin-top: 20px;
+  background-color: #f8f9fa;
+  padding: 15px;
+  border-radius: 8px;
+}
+.probability-chart {
+  grid-column: 1 / -1;
+  margin-top: 20px;
+}
+.probability-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.probability-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.bar-label {
+  width: 30px;
+  text-align: right;
+}
+.bar-container {
+  flex: 1;
+  height: 20px;
+  background-color: #e9ecef;
+  border-radius: 4px;
+}
+.bar {
+  height: 100%;
+  background-color: #007bff;
+  border-radius: 4px;
+}
+.bar-value {
+  width: 60px;
+}
+.bar.disabled {
+  background-color: #ddd;
+  opacity: 0.5;
+}
+
+.disabled-text {
+  color: #999;
+  font-style: italic;
+}
+
+.not-possible {
+  font-size: 0.8em;
+  color: #999;
+  margin-left: 5px;
+}
