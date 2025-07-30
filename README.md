@@ -2,7 +2,6 @@
 
 ![Versión](https://img.shields.io/badge/versión-1.0.0-blue)
 ![Angular](https://img.shields.io/badge/Angular-16+-dd0031)
-![Licencia](https://img.shields.io/badge/licencia-MIT-green)
 
 Una aplicación web interactiva para el cálculo, análisis y visualización de sistemas de colas, desarrollada con Angular.
 
@@ -31,7 +30,7 @@ Una aplicación web interactiva para el cálculo, análisis y visualización de 
 
 ## 🚀 Demo
 
-Puedes probar la aplicación en vivo [aquí](https://cambiar.com).
+Puedes probar la aplicación en vivo [aquí](https://galohoyos.github.io/CalcColasElGalgo/).
 
 ## 💻 Tecnologías utilizadas
 
