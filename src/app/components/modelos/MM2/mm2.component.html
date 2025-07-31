@@ -10,6 +10,31 @@
     </div>
   </div>
 
+  <!-- Selector de tipo de servidores -->
+  <div class="form-group server-type-selector">
+    <label>Configuración de servidores:</label>
+    <div class="radio-group">
+      <label class="radio-option">
+        <input
+          type="radio"
+          name="serverType"
+          [checked]="!params.differentSpeeds"
+          (change)="toggleServerSpeeds(false)"
+        />
+        <span>Servidores con velocidades iguales</span>
+      </label>
+      <label class="radio-option">
+        <input
+          type="radio"
+          name="serverType"
+          [checked]="params.differentSpeeds"
+          (change)="toggleServerSpeeds(true)"
+        />
+        <span>Servidores con velocidades diferentes</span>
+      </label>
+    </div>
+  </div>
+
   <div class="input-grid">
     <div class="form-group">
       <label>Tasa de llegadas (λ):</label>
@@ -22,7 +47,8 @@
         min="0"
       />
     </div>
-    <div class="form-group">
+
+    <div class="form-group" *ngIf="!params.differentSpeeds">
       <label>Tasa de servicio por servidor (μ):</label>
       <input
         type="number"
@@ -33,5 +59,46 @@
         min="0"
       />
     </div>
+
+    <!-- Campos para servidores con velocidades diferentes -->
+    <div class="form-group" *ngIf="params.differentSpeeds">
+      <label>Tasa de servicio servidor 1 (μ₁):</label>
+      <input
+        type="number"
+        class="form-control"
+        [ngModel]="params.mu"
+        (ngModelChange)="updateMu($event)"
+        step="0.1"
+        min="0"
+      />
+    </div>
+
+    <div class="form-group" *ngIf="params.differentSpeeds">
+      <label>Tasa de servicio servidor 2 (μ₂):</label>
+      <input
+        type="number"
+        class="form-control"
+        [ngModel]="params.mu2 || params.mu"
+        (ngModelChange)="updateMu2($event)"
+        step="0.1"
+        min="0"
+      />
+    </div>
+  </div>
+
+  <!-- Información adicional -->
+  <div class="info-section" *ngIf="params.differentSpeeds">
+    <small class="text-muted">
+      <strong>Nota:</strong> Con servidores de velocidades diferentes, la
+      capacidad total del sistema es μ₁ + μ₂ =
+      {{ params.mu + (params.mu2 || 0) | number : "1.2-2" }}
+    </small>
+  </div>
+
+  <div class="info-section" *ngIf="!params.differentSpeeds">
+    <small class="text-muted">
+      <strong>Nota:</strong> Con servidores de velocidades iguales, la capacidad
+      total del sistema es 2μ = {{ 2 * params.mu | number : "1.2-2" }}
+    </small>
   </div>
 </div>

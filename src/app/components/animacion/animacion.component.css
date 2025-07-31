@@ -52,6 +52,7 @@
   border-radius: 8px;
   padding: 15px;
   background: #fff9c4;
+  overflow: hidden;
 }
 
 .queue-label {
@@ -292,4 +293,40 @@
 }
 .small-stat text {
   font-size: small;
+}
+
+.warning-alert {
+  background: #fff3cd;
+  border: 1px solid #ffc107;
+  border-radius: 8px;
+  padding: 15px;
+  margin: 15px 0;
+  color: #856404;
+  border-left: 4px solid #ffc107;
+}
+
+.warning-alert strong {
+  color: #856404;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.warning-alert p {
+  margin: 0;
+  font-size: 14px;
+}
+
+.info-alert {
+  background: #d1ecf1;
+  border: 1px solid #bee5eb;
+  border-radius: 8px;
+  padding: 15px;
+  margin: 15px 0;
+  color: #0c5460;
+  border-left: 4px solid #17a2b8;
+}
+
+.info-alert p {
+  margin: 0;
+  font-size: 14px;
 }

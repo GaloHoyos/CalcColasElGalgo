@@ -1,5 +1,15 @@
 <div class="animation-container">
   <h4>Simulación Visual del Sistema</h4>
+
+  <!-- Advertencia para sistemas inestables -->
+  <div *ngIf="isUnstableSystem" class="warning-alert">
+    <strong>⚠️ Sistema inestable detectado (ρ ≥ 1)</strong>
+    <p>
+      La simulación puede mostrar comportamiento no realista. Los clientes
+      pueden acumularse indefinidamente.
+    </p>
+  </div>
+
   <div class="queue-visualization">
     <!-- Entrada del sistema -->
     <div class="entrance">
@@ -45,7 +55,7 @@
         >
           <div class="server-icon">🏪</div>
           <div class="server-label">Servidor {{ server.id + 1 }}</div>
-          <div class="service-rate">μ = {{ serviceRate }}</div>
+          <div class="service-rate">μ = {{ getServerRate(server.id) }}</div>
           <div
             *ngIf="server.customer"
             class="customer being-served"
@@ -90,6 +100,24 @@
 
   <!-- Controles de simulación -->
   <div class="simulation-controls">
+    <!-- Debug temporal -->
+    <div
+      style="
+        background: #f0f0f0;
+        padding: 10px;
+        margin: 10px 0;
+        font-size: 12px;
+      "
+    >
+      <strong>Debug MM2:</strong><br />
+      isValidSystem: {{ isValidSystem }}<br />
+      arrivalRate: {{ arrivalRate }}<br />
+      serviceRate: {{ serviceRate }}<br />
+      serverRates: {{ serverRates | json }}<br />
+      servers length: {{ servers.length }}<br />
+      queueType: {{ queueType }}
+    </div>
+
     <button
       class="btn btn-primary"
       (click)="toggleSimulation()"

@@ -10,6 +10,12 @@ export interface QueueResult {
   En?: number; // Esperanza matemática del número de clientes
   ET?: number; // Esperanza matemática del tiempo en el sistema
   priorityData?: PriorityResult; // Datos completos para sistemas con prioridades
+  isUnstable?: boolean; // Indica si el sistema es inestable
+  warningMessage?: string; // Mensaje de advertencia para sistemas inestables
+  // Nuevas métricas para MM2 con selección de servidor
+  rhoCritical?: number; // Rho crítico para MM2 con selección
+  N?: number; // Número medio de clientes (método alternativo)
+  aPrime?: number; // Factor a' para cálculos de MM2
 }
 
 export interface PriorityParams {
@@ -32,10 +38,11 @@ export interface PriorityResult {
   class1: PriorityClassResult; // Resultados para clientes de alta prioridad
   class2: PriorityClassResult; // Resultados para clientes de baja prioridad
   system: {
-    // Resultados del sistema completo
     L: number; // Número total de clientes en el sistema
     Lq: number; // Número total de clientes en cola
   };
+  isUnstable?: boolean;
+  warningMessage?: string;
 }
 
 export interface MM1Params {
@@ -52,6 +59,8 @@ export interface MM1NParams {
 export interface MM2Params {
   lambda: number;
   mu: number;
+  differentSpeeds?: boolean;
+  mu2?: number;
 }
 
 export interface MG1Params {

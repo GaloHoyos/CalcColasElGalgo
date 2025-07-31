@@ -1,17 +1,36 @@
 <div *ngIf="result" class="results">
   <h4>Resultados del Sistema {{ queueType }}</h4>
 
+  <!-- Advertencia de sistema inestable -->
+  <div *ngIf="result.isUnstable" class="warning-alert">
+    <strong>{{ result.warningMessage }}</strong>
+    <p>
+      La simulación puede seguir ejecutándose, pero los valores teóricos pueden
+      divergir del comportamiento real.
+    </p>
+  </div>
+
+  <!-- Mensaje informativo para sistemas estables con alta utilización (como MM1N) -->
+  <div *ngIf="!result.isUnstable && result.warningMessage" class="info-alert">
+    <strong>{{ result.warningMessage }}</strong>
+  </div>
+
+  <!-- Advertencia para prioridades -->
+  <div *ngIf="result.priorityData?.isUnstable" class="warning-alert">
+    <strong>{{ result.priorityData?.warningMessage }}</strong>
+    <p>
+      La simulación puede seguir ejecutándose, pero los valores teóricos pueden
+      divergir del comportamiento real.
+    </p>
+  </div>
+
   <!-- Métricas básicas comunes a todos los modelos -->
   <div class="results-grid">
     <div class="card">
       <h5>Métricas Básicas</h5>
       <div class="metric">
-        <span class="metric-label">Intensidad de tráfico (ρ):</span>
+        <span class="metric-label">Utilización del sistema (ρ):</span>
         <span class="metric-value">{{ result.rho | number : "1.4-4" }}</span>
-      </div>
-      <div class="metric">
-        <span class="metric-label">Prob. sistema vacío (P₀):</span>
-        <span class="metric-value">{{ result.P0 | number : "1.4-4" }}</span>
       </div>
       <div class="metric">
         <span class="metric-label">Utilización del sistema:</span>
@@ -19,12 +38,16 @@
           >{{ result.rho * 100 | number : "1.2-2" }}%</span
         >
       </div>
+      <div class="metric">
+        <span class="metric-label">Prob. sistema vacío (P₀):</span>
+        <span class="metric-value">{{ result.P0 | number : "1.4-4" }}</span>
+      </div>
     </div>
 
     <div class="card">
-      <h5>Número Promedio en el Sistema</h5>
+      <h5>Número Promedio</h5>
       <div class="metric">
-        <span class="metric-label">En el sistema (L):</span>
+        <span class="metric-label">En el sistema (Ls):</span>
         <span class="metric-value">{{ result.L | number : "1.4-4" }}</span>
       </div>
       <div class="metric">
@@ -42,7 +65,7 @@
     <div class="card">
       <h5>Tiempo Promedio</h5>
       <div class="metric">
-        <span class="metric-label">En el sistema (W):</span>
+        <span class="metric-label">En el sistema (Ws):</span>
         <span class="metric-value">{{ result.W | number : "1.4-4" }}</span>
       </div>
       <div class="metric">
@@ -65,15 +88,15 @@
     <div class="card">
       <h5>Métricas Específicas MM1N</h5>
       <div class="metric">
-        <span class="metric-label">Prob. de pérdida (Pn):</span>
+        <span class="metric-label">Prob. de rechazo (Pn):</span>
         <span class="metric-value">{{
-          getLossProbability() | number : "1.4-4"
+          getRejectionProbability() | number : "1.4-4"
         }}</span>
       </div>
       <div class="metric">
         <span class="metric-label">Tasa efectiva (λef):</span>
         <span class="metric-value">{{
-          params.lambda * (1 - getLossProbability()) | number : "1.4-4"
+          params.lambda * (1 - getRejectionProbability()) | number : "1.4-4"
         }}</span>
       </div>
     </div>
@@ -100,6 +123,136 @@
         <span class="metric-value">{{
           getProbabilityN(2) | number : "1.4-4"
         }}</span>
+      </div>
+    </div>
+
+    <!-- Información adicional del sistema MM2 -->
+    <div *ngIf="!hasDifferentServerSpeeds()" class="card">
+      <h5>Configuración del Sistema</h5>
+      <div class="metric">
+        <span class="metric-label">Capacidad total del sistema:</span>
+        <span class="metric-value"
+          >{{ params.mu * 2 | number : "1.1-1" }} clientes/hora</span
+        >
+      </div>
+      <div class="metric">
+        <span class="metric-label">Tasa por servidor:</span>
+        <span class="metric-value"
+          >{{ params.mu | number : "1.1-1" }} clientes/hora</span
+        >
+      </div>
+      <div class="metric">
+        <span class="metric-label">Tipo de servidores:</span>
+        <span class="metric-value">Idénticos (misma velocidad)</span>
+      </div>
+    </div>
+
+    <!-- Métricas adicionales para MM2 con selección de servidor -->
+    <div *ngIf="hasDifferentServerSpeeds()" class="additional-metrics">
+      <h3
+        style="
+          color: #333;
+          margin-bottom: 25px;
+          text-align: center;
+          font-size: 1.4em;
+        "
+      >
+        MM2 con Selección Inteligente de Servidor
+      </h3>
+
+      <div class="metrics-section system-parameters">
+        <h4>⚙️ Configuración de Servidores Heterogéneos</h4>
+        <div class="results-grid">
+          <div class="metric-card">
+            <h5>Servidor Rápido</h5>
+            <p style="font-size: 1.3em; font-weight: bold; color: #4caf50">
+              μ₁ = {{ getFasterServerRate() | number : "1.1-1" }}
+            </p>
+            <small style="color: #666">clientes/hora</small>
+          </div>
+          <div class="metric-card">
+            <h5>Servidor Lento</h5>
+            <p style="font-size: 1.3em; font-weight: bold; color: #ff9800">
+              μ₂ = {{ getSlowerServerRate() | number : "1.1-1" }}
+            </p>
+            <small style="color: #666">clientes/hora</small>
+          </div>
+          <div class="metric-card">
+            <h5>Relación de Velocidades</h5>
+            <p style="font-size: 1.3em; font-weight: bold; color: #2196f3">
+              {{ getServerSpeedRatio() | number : "1.2-2" }} : 1
+            </p>
+            <small style="color: #666">μ_rápido / μ_lento</small>
+          </div>
+          <div class="metric-card">
+            <h5>Factor de Eficiencia</h5>
+            <p style="font-size: 1.3em; font-weight: bold; color: #9c27b0">
+              a' = {{ result.aPrime | number : "1.2-2" }}
+            </p>
+            <small style="color: #666">Tasa efectiva con selección</small>
+          </div>
+        </div>
+      </div>
+
+      <!-- Comparación: Con vs Sin Selección -->
+      <div class="metrics-section comparison-section">
+        <h4>📊 Comparación: Con vs Sin Selección de Servidor</h4>
+
+        <div class="metric-cards-grid">
+          <div class="comparison-metric-card">
+            <h5>🎯 Probabilidad Sistema Vacío (P₀)</h5>
+            <div class="comparison-values">
+              <div class="comparison-row">
+                <span class="comparison-label">Sin selección:</span>
+                <span class="comparison-value value-without-selection">
+                  {{ getMM2WithoutSelection().P0 * 100 | number : "1.1-1" }}%
+                </span>
+              </div>
+              <div class="comparison-row">
+                <span class="comparison-label">Con selección:</span>
+                <span class="comparison-value value-with-selection">
+                  {{ result.P0 * 100 | number : "1.1-1" }}%
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="comparison-metric-card">
+            <h5>👥 Número Medio de Clientes (L)</h5>
+            <div class="comparison-values">
+              <div class="comparison-row">
+                <span class="comparison-label">Sin selección:</span>
+                <span class="comparison-value value-without-selection">
+                  {{ getMM2WithoutSelection().L | number : "1.2-2" }} clientes
+                </span>
+              </div>
+              <div class="comparison-row">
+                <span class="comparison-label">Con selección:</span>
+                <span class="comparison-value value-with-selection">
+                  {{ result.L | number : "1.2-2" }} clientes
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="comparison-metric-card">
+            <h5>⏱️ Tiempo Promedio en Sistema (W)</h5>
+            <div class="comparison-values">
+              <div class="comparison-row">
+                <span class="comparison-label">Sin selección:</span>
+                <span class="comparison-value value-without-selection">
+                  {{ getMM2WithoutSelection().W | number : "1.3-3" }} horas
+                </span>
+              </div>
+              <div class="comparison-row">
+                <span class="comparison-label">Con selección:</span>
+                <span class="comparison-value value-with-selection">
+                  {{ result.W | number : "1.3-3" }} horas
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>

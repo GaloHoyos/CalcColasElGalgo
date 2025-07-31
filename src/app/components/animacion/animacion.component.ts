@@ -12,11 +12,11 @@ import { QueueResult, QueueType } from "../../models/colas-modelos";
 
 interface Customer {
   id: number;
-  position: number; // Posición en la cola (0, 1, 2...)
+  position: number;
   state: "waiting" | "being-served" | "leaving";
   serverId?: number;
   arrivalTime: number;
-  priority?: number; // 1 = alta prioridad, 2 = baja prioridad
+  priority?: number;
 }
 
 interface Server {
@@ -36,11 +36,11 @@ interface Server {
 export class QueueAnimationComponent implements OnChanges, OnDestroy {
   @Input() queueType: QueueType = "MM1";
   @Input() result: QueueResult | null = null;
-  @Input() arrivalRate: number = 0; // λ - llegadas por hora
-  @Input() serviceRate: number = 0; // μ - servicios por hora
-  @Input() systemCapacity?: number; // Para MM1N
+  @Input() arrivalRate: number = 0;
+  @Input() serviceRate: number = 0;
+  @Input() serverRates?: number[]; // Para sistemas con múltiples servidores de diferentes velocidades
+  @Input() systemCapacity?: number;
 
-  // Estado de la simulación
   waitingCustomers: Customer[] = [];
   servers: Server[] = [];
   servedCustomers: number = 0;
@@ -50,17 +50,15 @@ export class QueueAnimationComponent implements OnChanges, OnDestroy {
   expectedInQueue: number = 0;
   isRunning: boolean = false;
   isValidSystem: boolean = false;
+  isUnstableSystem: boolean = false;
 
-  // Configuración de tiempo
-  elapsedTime: number = 0; // Tiempo simulado en segundos
-  simulationSpeed: number = 1; // Multiplicador de velocidad
-  timeScale: number = 5; // Minutos simulados por segundo real
+  elapsedTime: number = 0;
+  simulationSpeed: number = 1;
+  timeScale: number = 5;
   timeScaleOptions: number[] = [1, 5, 10, 15, 30, 60];
 
-  // Parámetros de visualización
-  customerWidth: number = 30; // Ancho visual de un cliente en píxeles
+  customerWidth: number = 30;
 
-  // Contadores y referencias internas
   private nextCustomerId: number = 0;
   private nextEventTime: number = 0;
   private simulationTimer: any = null;
@@ -69,8 +67,87 @@ export class QueueAnimationComponent implements OnChanges, OnDestroy {
   constructor(private cdr: ChangeDetectorRef) {}
 
   ngOnChanges(changes: SimpleChanges) {
-    this.resetSimulation();
-    this.updateSimulationParameters();
+    // Solo resetear si realmente hay cambios en parámetros importantes
+    let hasImportantChanges = false;
+
+    if (changes["queueType"]) {
+      console.log(
+        "queueType changed:",
+        changes["queueType"].previousValue,
+        "->",
+        changes["queueType"].currentValue
+      );
+      hasImportantChanges = true;
+    }
+
+    if (changes["arrivalRate"]) {
+      console.log(
+        "arrivalRate changed:",
+        changes["arrivalRate"].previousValue,
+        "->",
+        changes["arrivalRate"].currentValue
+      );
+      hasImportantChanges = true;
+    }
+
+    if (changes["serviceRate"]) {
+      console.log(
+        "serviceRate changed:",
+        changes["serviceRate"].previousValue,
+        "->",
+        changes["serviceRate"].currentValue
+      );
+      hasImportantChanges = true;
+    }
+
+    if (changes["systemCapacity"]) {
+      console.log(
+        "systemCapacity changed:",
+        changes["systemCapacity"].previousValue,
+        "->",
+        changes["systemCapacity"].currentValue
+      );
+      hasImportantChanges = true;
+    }
+
+    // Para serverRates, verificar si realmente cambió el contenido
+    if (changes["serverRates"]) {
+      const prev = changes["serverRates"].previousValue;
+      const curr = changes["serverRates"].currentValue;
+
+      if (!prev && curr) {
+        console.log("serverRates initialized:", curr);
+        hasImportantChanges = true;
+      } else if (prev && !curr) {
+        console.log("serverRates removed");
+        hasImportantChanges = true;
+      } else if (prev && curr) {
+        // Comparar arrays elemento por elemento
+        if (
+          prev.length !== curr.length ||
+          !prev.every((val: number, index: number) => val === curr[index])
+        ) {
+          console.log("serverRates content changed:", prev, "->", curr);
+          hasImportantChanges = true;
+        }
+      }
+    }
+
+    // Para result, solo resetear en el primer cambio (cuando se inicializa)
+    if (
+      changes["result"] &&
+      !changes["result"].previousValue &&
+      changes["result"].currentValue
+    ) {
+      console.log("result initialized");
+      hasImportantChanges = true;
+    }
+
+    if (hasImportantChanges) {
+      console.log("Important parameter changes detected, resetting simulation");
+      this.resetSimulation();
+      this.updateSimulationParameters();
+    }
   }
 
   ngOnDestroy() {
@@ -78,28 +155,37 @@ export class QueueAnimationComponent implements OnChanges, OnDestroy {
   }
 
   private updateSimulationParameters() {
+    console.log("updateSimulationParameters - Debug info:");
+    console.log("arrivalRate:", this.arrivalRate);
+    console.log("serviceRate:", this.serviceRate);
+    console.log("serverRates:", this.serverRates);
+    console.log("queueType:", this.queueType);
+    console.log("result:", this.result);
+
+    // Validación mejorada para sistemas con múltiples servidores
+    if (
+      this.queueType === "MM2" &&
+      this.serverRates &&
+      this.serverRates.length > 0
+    ) {
+      // Para MM2, verificar que haya tasas válidas para ambos servidores
+      this.isValidSystem =
+        this.arrivalRate > 0 && this.serverRates.every((rate) => rate > 0);
+    } else {
+      this.isValidSystem = this.arrivalRate > 0 && this.serviceRate > 0;
+    }
+    console.log("isValidSystem:", this.isValidSystem);
+
     if (!this.result) {
-      this.isValidSystem = false;
+      this.isUnstableSystem = false;
       return;
     }
 
     this.utilization = Math.round(this.result.rho * 100);
     this.expectedInQueue = Math.round(this.result.Lq * 10) / 10;
 
-    // Para sistemas Priority, verificar si tenemos los datos desglosados
-    if (this.queueType === "Prioridades" && this.result.priorityData) {
-      // Podríamos mostrar estadísticas adicionales específicas para prioridades
-    }
+    this.isUnstableSystem = this.queueType !== "MM1N" && this.result.rho >= 1;
 
-    // Modificar esta línea para incluir Priority
-    this.isValidSystem =
-      this.arrivalRate > 0 &&
-      this.serviceRate > 0 &&
-      (this.queueType === "MM1N" ||
-        this.queueType === "Prioridades" ||
-        this.result.rho < 1);
-
-    // Inicializar servidores
     const serverCount = this.getServerCount();
     this.servers = Array(serverCount)
       .fill(null)
@@ -109,6 +195,8 @@ export class QueueAnimationComponent implements OnChanges, OnDestroy {
         customer: null,
         serviceEndTime: null,
       }));
+
+    console.log("servers created:", this.servers);
   }
 
   private getServerCount(): number {
@@ -116,34 +204,47 @@ export class QueueAnimationComponent implements OnChanges, OnDestroy {
       case "MM2":
         return 2;
       case "Prioridades":
-        return 1; // Sistemas con prioridad generalmente tienen 1 servidor
+        return 1;
       default:
         return 1;
     }
   }
 
-  // CONTROL DE SIMULACIÓN
   toggleSimulation() {
+    console.log(
+      "toggleSimulation called - isRunning:",
+      this.isRunning,
+      "isValidSystem:",
+      this.isValidSystem
+    );
     if (this.isRunning) {
+      console.log("Stopping simulation...");
       this.stopSimulation();
     } else {
+      console.log("Attempting to start simulation...");
       this.startSimulation();
     }
   }
 
   private startSimulation() {
-    if (!this.isValidSystem) return;
+    console.log("startSimulation called - isValidSystem:", this.isValidSystem);
+    if (!this.isValidSystem) {
+      console.log("Simulation blocked: invalid system");
+      return;
+    }
 
+    console.log("Starting simulation...");
     this.isRunning = true;
     this.lastUpdateTime = Date.now();
 
-    // Programar primera llegada si no hay eventos pendientes
     if (this.nextEventTime <= 0) {
+      console.log("Scheduling next arrival...");
       this.scheduleNextArrival();
     }
 
-    // Iniciar bucle principal de simulación
-    this.simulationTimer = setInterval(() => this.update(), 50); // 20 FPS
+    console.log("Setting up timer...");
+    this.simulationTimer = setInterval(() => this.update(), 50);
+    console.log("Simulation started successfully");
   }
 
   private stopSimulation() {
@@ -171,7 +272,6 @@ export class QueueAnimationComponent implements OnChanges, OnDestroy {
   }
 
   updateSimulationSpeed() {
-    // Si estamos ejecutando, reiniciar para aplicar nuevos parámetros
     if (this.isRunning) {
       this.stopSimulation();
       this.startSimulation();
@@ -185,22 +285,15 @@ export class QueueAnimationComponent implements OnChanges, OnDestroy {
     const deltaTimeMs = now - this.lastUpdateTime;
     this.lastUpdateTime = now;
 
-    // Actualizar tiempo simulado
     const simulatedSeconds = (deltaTimeMs / 1000) * this.timeScale * 60;
     this.elapsedTime += simulatedSeconds;
 
-    // Procesar eventos (AÑADIR ESTA LÍNEA - FALTABA ESTA LLAMADA)
     this.processEvents();
-
-    // Actualizar estadísticas (AÑADIR ESTA LÍNEA - FALTABA ESTA LLAMADA)
     this.updateStats();
-
-    // Forzar actualización de la UI
     this.cdr.detectChanges();
   }
 
   private processEvents() {
-    // 1. Verificar si algún servidor ha terminado de atender
     this.servers.forEach((server) => {
       if (
         server.busy &&
@@ -211,7 +304,6 @@ export class QueueAnimationComponent implements OnChanges, OnDestroy {
       }
     });
 
-    // 2. Verificar si es momento de una nueva llegada
     if (this.nextEventTime > 0 && this.nextEventTime <= this.elapsedTime) {
       this.processArrival();
       this.scheduleNextArrival();
@@ -219,49 +311,63 @@ export class QueueAnimationComponent implements OnChanges, OnDestroy {
   }
 
   private scheduleNextArrival() {
-    if (!this.isRunning) return;
+    if (!this.isRunning) {
+      console.log("scheduleNextArrival: simulation not running");
+      return;
+    }
 
-    // Calcular tiempo hasta próxima llegada (distribución exponencial)
     const interarrivalTime = this.getRandomInterarrivalTime();
     this.nextEventTime = this.elapsedTime + interarrivalTime;
+    console.log(
+      "Next arrival scheduled at:",
+      this.nextEventTime,
+      "interarrival time:",
+      interarrivalTime
+    );
   }
 
   private getRandomInterarrivalTime(): number {
-    // Tiempo entre llegadas sigue distribución exponencial
-    // Para Priority, usamos la suma de ambas tasas
     let lambda = this.arrivalRate;
+    console.log("getRandomInterarrivalTime - initial lambda:", lambda);
 
     if (this.queueType === "Prioridades") {
       lambda = this.getPriorityLambda1() + this.getPriorityLambda2();
+      console.log("Priority queue - combined lambda:", lambda);
     }
 
-    // λ es tasa por hora, convertir a tasa por segundo
-    const lambdaPerSecond = lambda / 3600;
-    return -Math.log(Math.random()) / lambdaPerSecond;
+    // Apply time scale to make simulation more responsive
+    // Convert from customers/hour to customers/simulation-second
+    const scaledLambda = (lambda * this.timeScale) / 3600;
+    const interarrivalTime = -Math.log(Math.random()) / scaledLambda;
+    console.log(
+      "Calculated interarrival time:",
+      interarrivalTime,
+      "scaledLambda:",
+      scaledLambda,
+      "timeScale:",
+      this.timeScale
+    );
+
+    return interarrivalTime;
   }
   private processArrival() {
-    // Para MM1N, verificar si el sistema está lleno
     if (this.queueType === "MM1N" && this.systemCapacity) {
       if (this.totalInSystem >= this.systemCapacity) {
         this.rejectedCustomers++;
-        return; // Cliente rechazado
+        return;
       }
     }
 
-    // Determinar la prioridad para sistemas Priority
     let priority: number | undefined;
     if (this.queueType === "Prioridades") {
-      // Decidir si es cliente de alta o baja prioridad basado en las tasas
       const lambda1 = this.getPriorityLambda1();
       const lambda2 = this.getPriorityLambda2();
       const totalLambda = lambda1 + lambda2;
 
-      // Probabilidad de ser cliente de alta prioridad = lambda1 / (lambda1 + lambda2)
       const isPriority1 = Math.random() < lambda1 / totalLambda;
       priority = isPriority1 ? 1 : 2;
     }
 
-    // Crear nuevo cliente
     const customer: Customer = {
       id: this.nextCustomerId++,
       position: this.waitingCustomers.length,
@@ -270,24 +376,18 @@ export class QueueAnimationComponent implements OnChanges, OnDestroy {
       priority: priority,
     };
 
-    // Buscar servidor disponible
     const availableServerIndex = this.servers.findIndex((s) => !s.busy);
 
     if (availableServerIndex !== -1) {
-      // Servir inmediatamente
       this.serveCustomer(customer, availableServerIndex);
     } else {
-      // Agregar a la cola
       this.waitingCustomers.push(customer);
 
-      // Para Priority, reordenar por prioridad
       if (this.queueType === "Prioridades") {
         this.waitingCustomers.sort((a, b) => {
-          // Primero por prioridad (menor número = mayor prioridad)
           if (a.priority !== b.priority) {
             return (a.priority || 0) - (b.priority || 0);
           }
-          // Luego por tiempo de llegada (FIFO dentro de la misma prioridad)
           return a.arrivalTime - b.arrivalTime;
         });
       }
@@ -302,46 +402,41 @@ export class QueueAnimationComponent implements OnChanges, OnDestroy {
   private serveCustomer(customer: Customer, serverId: number) {
     const server = this.servers[serverId];
 
-    // Actualizar cliente
     customer.state = "being-served";
     customer.serverId = serverId;
 
-    // Actualizar servidor
     server.busy = true;
     server.customer = customer;
 
-    // Calcular tiempo de servicio
-    const serviceTime = this.getRandomServiceTime();
+    const serviceTime = this.getRandomServiceTime(serverId);
     server.serviceEndTime = this.elapsedTime + serviceTime;
   }
 
-  private getRandomServiceTime(): number {
-    // Tiempo de servicio según el tipo de sistema
-    const muPerSecond = this.serviceRate / 3600; // convertir por hora a por segundo
+  private getRandomServiceTime(serverId?: number): number {
+    const serverRate =
+      serverId !== undefined ? this.getServerRate(serverId) : this.serviceRate;
+    // Apply time scale to make simulation more responsive
+    // Convert from services/hour to services/simulation-second
+    const scaledMu = (serverRate * this.timeScale) / 3600;
 
     switch (this.queueType) {
       case "MD1":
-        // Determinístico (constante)
-        return 1 / muPerSecond;
+        return 1 / scaledMu;
 
       case "MG1":
-        // Distribución gamma como aproximación de distribución general
-        const mean = 1 / muPerSecond;
-        const variance = 0.5; // Varianza configurada para MG1
+        const mean = 1 / scaledMu;
+        const variance = 0.5;
         return this.generateGammaTime(mean, variance);
 
       default:
-        // Distribución exponencial (MM1, MM2, MM1N)
-        return -Math.log(Math.random()) / muPerSecond;
+        return -Math.log(Math.random()) / scaledMu;
     }
   }
 
   private generateGammaTime(mean: number, variance: number): number {
-    // Aproximación de distribución gamma
     const shape = Math.pow(mean, 2) / variance;
     const scale = variance / mean;
 
-    // Algoritmo simple para distribución gamma
     let result = 0;
     for (let i = 0; i < shape; i++) {
       result -= Math.log(Math.random());
@@ -353,46 +448,38 @@ export class QueueAnimationComponent implements OnChanges, OnDestroy {
   private completeService(serverId: number) {
     const server = this.servers[serverId];
 
-    // Incrementar contador de clientes atendidos
     if (server.customer) {
       this.servedCustomers++;
     }
 
-    // Liberar servidor
     server.busy = false;
     server.customer = null;
     server.serviceEndTime = null;
 
-    // Atender siguiente cliente en cola si hay alguno
     if (this.waitingCustomers.length > 0) {
       const nextCustomer = this.waitingCustomers.shift()!;
       this.serveCustomer(nextCustomer, serverId);
       this.reorderQueue();
     }
 
-    // Actualizar estadísticas
     this.totalInSystem =
       this.waitingCustomers.length + this.servers.filter((s) => s.busy).length;
   }
 
   private reorderQueue() {
-    // Actualizar posiciones en la cola
     this.waitingCustomers.forEach((customer, index) => {
       customer.position = index;
     });
   }
 
   private updateStats() {
-    // Actualizar estadísticas basadas en el estado actual
     const busyServers = this.servers.filter((s) => s.busy).length;
     const totalServers = this.servers.length;
     this.utilization = Math.round((busyServers / totalServers) * 100);
 
-    // Otras estadísticas que podrían ser útiles
     this.totalInSystem = this.waitingCustomers.length + busyServers;
   }
 
-  // HELPERS PARA LA VISTA
   formatTime(seconds: number): string {
     const hours = Math.floor(seconds / 3600);
     const mins = Math.floor((seconds % 3600) / 60);
@@ -400,7 +487,6 @@ export class QueueAnimationComponent implements OnChanges, OnDestroy {
   }
 
   getCustomerPosition(position: number): string {
-    // Calcular posición visual del cliente en la cola
     return `${position * this.customerWidth}px`;
   }
 
@@ -408,18 +494,37 @@ export class QueueAnimationComponent implements OnChanges, OnDestroy {
     return customer.id;
   }
 
+  getServerRate(serverId: number): number {
+    console.log(
+      `getServerRate(${serverId}) - serverRates:`,
+      this.serverRates,
+      "serviceRate:",
+      this.serviceRate
+    );
+    if (this.serverRates && this.serverRates[serverId] !== undefined) {
+      console.log(
+        `Returning specific rate for server ${serverId}:`,
+        this.serverRates[serverId]
+      );
+      return this.serverRates[serverId];
+    }
+    console.log(
+      `Returning general rate for server ${serverId}:`,
+      this.serviceRate
+    );
+    return this.serviceRate;
+  }
+
   private getPriorityLambda1(): number {
-    // Obtener la tasa de llegada para clientes de alta prioridad
     if (this.queueType === "Prioridades" && this.result?.priorityData) {
-      return this.arrivalRate * 0.65; // Si no está disponible, asumimos 65% del total
+      return this.arrivalRate * 0.65;
     }
     return this.arrivalRate * 0.65;
   }
 
   private getPriorityLambda2(): number {
-    // Obtener la tasa de llegada para clientes de baja prioridad
     if (this.queueType === "Prioridades" && this.result?.priorityData) {
-      return this.arrivalRate * 0.35; // Si no está disponible, asumimos 35% del total
+      return this.arrivalRate * 0.35;
     }
     return this.arrivalRate * 0.35;
   }

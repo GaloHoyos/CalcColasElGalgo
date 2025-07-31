@@ -45,7 +45,7 @@ export class CalculadoraColasComponent {
 
   mm1Params: MM1Params = { lambda: 2, mu: 3 };
   mm1nParams: MM1NParams = { lambda: 2, mu: 3, N: 10 };
-  mm2Params: MM2Params = { lambda: 3, mu: 2 };
+  mm2Params: MM2Params = { lambda: 3, mu: 2, differentSpeeds: false };
   mg1Params: MG1Params = { lambda: 2, mu: 3, sigma: 0.5 };
   md1Params: MD1Params = { lambda: 2, mu: 3 };
   priorityParams: PriorityParams = {
@@ -99,14 +99,7 @@ export class CalculadoraColasComponent {
       switch (this.selectedQueue) {
         case "MM1":
           if (this.mm1Params.lambda > 0 && this.mm1Params.mu > 0) {
-            // Verificar estabilidad para MM1
-            if (this.mm1Params.lambda >= this.mm1Params.mu) {
-              throw new Error(
-                "El sistema MM1 no es estable. La tasa de llegada debe ser menor que la tasa de servicio (λ < μ)"
-              );
-            }
-
-            this.queueParams = this.mm1Params; // Asignar parámetros actuales
+            this.queueParams = this.mm1Params;
             this.result = this.queueCalculator.calculateMM1(this.mm1Params);
           }
           break;
@@ -117,22 +110,14 @@ export class CalculadoraColasComponent {
             this.mm1nParams.mu > 0 &&
             this.mm1nParams.N > 0
           ) {
-            // MM1N no necesita verificación de estabilidad debido a la capacidad finita
-            this.queueParams = this.mm1nParams; // Asignar parámetros actuales
+            this.queueParams = this.mm1nParams;
             this.result = this.queueCalculator.calculateMM1N(this.mm1nParams);
           }
           break;
 
         case "MM2":
           if (this.mm2Params.lambda > 0 && this.mm2Params.mu > 0) {
-            // Verificar estabilidad para MM2
-            if (this.mm2Params.lambda >= 2 * this.mm2Params.mu) {
-              throw new Error(
-                "El sistema MM2 no es estable. La tasa de llegada debe ser menor que la tasa de servicio total (λ < 2μ)"
-              );
-            }
-
-            this.queueParams = this.mm2Params; // Asignar parámetros actuales
+            this.queueParams = this.mm2Params;
             this.result = this.queueCalculator.calculateMM2(this.mm2Params);
           }
           break;
@@ -143,28 +128,14 @@ export class CalculadoraColasComponent {
             this.mg1Params.mu > 0 &&
             this.mg1Params.sigma >= 0
           ) {
-            // Verificar estabilidad para MG1
-            if (this.mg1Params.lambda >= this.mg1Params.mu) {
-              throw new Error(
-                "El sistema MG1 no es estable. La tasa de llegada debe ser menor que la tasa de servicio (λ < μ)"
-              );
-            }
-
-            this.queueParams = this.mg1Params; // Asignar parámetros actuales
+            this.queueParams = this.mg1Params;
             this.result = this.queueCalculator.calculateMG1(this.mg1Params);
           }
           break;
 
         case "MD1":
           if (this.md1Params.lambda > 0 && this.md1Params.mu > 0) {
-            // Verificar estabilidad para MD1
-            if (this.md1Params.lambda >= this.md1Params.mu) {
-              throw new Error(
-                "El sistema MD1 no es estable. La tasa de llegada debe ser menor que la tasa de servicio (λ < μ)"
-              );
-            }
-
-            this.queueParams = this.md1Params; // Asignar parámetros actuales
+            this.queueParams = this.md1Params;
             this.result = this.queueCalculator.calculateMD1(this.md1Params);
           }
           break;
@@ -174,29 +145,17 @@ export class CalculadoraColasComponent {
             this.priorityParams.lambda2 > 0 &&
             this.priorityParams.mu > 0
           ) {
-            // Verificar estabilidad para Priority
-            if (
-              this.priorityParams.lambda1 + this.priorityParams.lambda2 >=
-              this.priorityParams.mu
-            ) {
-              throw new Error(
-                "El sistema con prioridades no es estable. La suma de tasas de llegada debe ser menor que la tasa de servicio (λ₁ + λ₂ < μ)"
-              );
-            }
-
             this.queueParams = this.priorityParams;
             const priorityResult =
               this.queueCalculator.calculatePriorityNoPreempt(
                 this.priorityParams
               );
 
-            // Convertir PriorityResult a QueueResult
             this.result = {
               rho: priorityResult.rho,
               P0: priorityResult.P0,
               L: priorityResult.system.L,
               Lq: priorityResult.system.Lq,
-              // Usar promedio ponderado para W y Wq
               W:
                 (priorityResult.class1.W * this.priorityParams.lambda1 +
                   priorityResult.class2.W * this.priorityParams.lambda2) /
@@ -205,7 +164,6 @@ export class CalculadoraColasComponent {
                 (priorityResult.class1.Wq * this.priorityParams.lambda1 +
                   priorityResult.class2.Wq * this.priorityParams.lambda2) /
                 (this.priorityParams.lambda1 + this.priorityParams.lambda2),
-              // Guardar los datos originales para mostrarlos en detalle si es necesario
               priorityData: priorityResult,
             };
           }
@@ -214,7 +172,7 @@ export class CalculadoraColasComponent {
     } catch (error: any) {
       this.errorMessage = error.message;
       this.result = null;
-      this.queueParams = null; // Limpiar parámetros en caso de error
+      this.queueParams = null;
     }
   }
   onPriorityParamsChange(params: PriorityParams) {
@@ -234,7 +192,6 @@ export class CalculadoraColasComponent {
       case "MD1":
         return this.md1Params.lambda;
       case "Prioridades":
-        // Para prioridades, usar la suma de ambas tasas de llegada
         return this.priorityParams.lambda1 + this.priorityParams.lambda2;
       default:
         return 0;
@@ -254,10 +211,22 @@ export class CalculadoraColasComponent {
       case "MD1":
         return this.md1Params.mu;
       case "Prioridades":
-        // Para prioridades, usar la tasa de servicio definida
         return this.priorityParams.mu;
       default:
         return 0;
+    }
+  }
+
+  getCurrentServerRates(): number[] | undefined {
+    switch (this.selectedQueue) {
+      case "MM2":
+        // Para MM2, verificar si tiene velocidades diferentes
+        if (this.mm2Params.differentSpeeds && this.mm2Params.mu2) {
+          return [this.mm2Params.mu, this.mm2Params.mu2];
+        }
+        return [this.mm2Params.mu, this.mm2Params.mu];
+      default:
+        return undefined; // Para otros sistemas usar la velocidad general
     }
   }
 

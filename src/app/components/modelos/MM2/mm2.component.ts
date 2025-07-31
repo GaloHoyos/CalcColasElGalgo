@@ -10,7 +10,7 @@ import { MM2Params } from "../../../models/colas-modelos";
   imports: [CommonModule, FormsModule],
 })
 export class MM2Component {
-  @Input() params: MM2Params = { lambda: 3, mu: 2 };
+  @Input() params: MM2Params = { lambda: 3, mu: 2, differentSpeeds: false };
   @Output() paramsChange = new EventEmitter<MM2Params>();
 
   updateLambda(value: number) {
@@ -20,6 +20,20 @@ export class MM2Component {
 
   updateMu(value: number) {
     this.params = { ...this.params, mu: value };
+    this.paramsChange.emit(this.params);
+  }
+
+  updateMu2(value: number) {
+    this.params = { ...this.params, mu2: value };
+    this.paramsChange.emit(this.params);
+  }
+
+  toggleServerSpeeds(differentSpeeds: boolean) {
+    this.params = {
+      ...this.params,
+      differentSpeeds,
+      mu2: differentSpeeds ? this.params.mu2 || this.params.mu : undefined,
+    };
     this.paramsChange.emit(this.params);
   }
 }
