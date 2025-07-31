@@ -100,24 +100,6 @@
 
   <!-- Controles de simulación -->
   <div class="simulation-controls">
-    <!-- Debug temporal -->
-    <div
-      style="
-        background: #f0f0f0;
-        padding: 10px;
-        margin: 10px 0;
-        font-size: 12px;
-      "
-    >
-      <strong>Debug MM2:</strong><br />
-      isValidSystem: {{ isValidSystem }}<br />
-      arrivalRate: {{ arrivalRate }}<br />
-      serviceRate: {{ serviceRate }}<br />
-      serverRates: {{ serverRates | json }}<br />
-      servers length: {{ servers.length }}<br />
-      queueType: {{ queueType }}
-    </div>
-
     <button
       class="btn btn-primary"
       (click)="toggleSimulation()"
